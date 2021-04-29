@@ -19,13 +19,13 @@ router.get('/', async (req, res) => {
 
 //create user
 router.post('/register', async (req, res) => {
-    const { username, password: textPassword} = req.body
+    const { username, password: textPassword, admin} = req.body
     const password = await bcrypt.hash(textPassword, 10)
 
     if (username.length <1) return res.status(400).json({message: 'Username missing'})
     if (textPassword.length <8) return res.status(400).json({message: 'Password must be at least 8 characters'})
 
-    const user = new User({ username, password })
+    const user = new User({ username, password, admin })
 
     try {
         const newUser = await user.save()
@@ -56,21 +56,29 @@ router.post('/login', async (req, res) => {
 
 //update user
 router.post('/changePassword', authenticateToken, async (req, res) => {
-    const {newPassword} = req.body
+    const {username, oldPassword, newPassword} = req.body
 
-
-    try {
-        const _id = user._id
-        const password = await bcrypt.hash(newPassword, 10)
-        await User.updateOne({_id}, {$set: {password}})
-        res.status(200).json({message: 'Successfully changed password'})
-    } catch (err) {
-        res.status(400).json({ message: err.message })
+    const user = await User.findOne({username}).lean()
+    
+    if (!user) {
+        return res.status(400).json({message:'User does not exist'})
     }
+
+    if (await bcrypt.compare(oldPassword, user.password)) {
+        try {
+            const _id = user._id
+            const password = await bcrypt.hash(newPassword, 10)
+            const newUser = await User.updateOne({_id}, {$set: {password}})
+            res.status(200).json({message: 'Successfully changed password', user:newUser})
+        } catch (err) {
+            res.status(400).json({ message: err.message })
+        }
+    }
+    return res.status(400).json({message:'Unable to change password'})
 })
 
 //delete user
-router.delete('/:id', getUser, async (req, res) => {
+router.delete('/:id', [getUser, authenticateToken], async (req, res) => {
     try {
         await res.user.remove()
         res.status(200).json({ message: 'Successfully deleted user' })
