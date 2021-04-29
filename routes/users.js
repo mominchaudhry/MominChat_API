@@ -8,7 +8,7 @@ const User = require('../models/user')
 const bcrypt = require('bcrypt')
 
 //get all users
-router.get('/', allowCORS, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const users = await User.find()
         res.json(users)
@@ -18,7 +18,7 @@ router.get('/', allowCORS, async (req, res) => {
 })
 
 //create user
-router.post('/register', allowCORS, async (req, res) => {
+router.post('/register', async (req, res) => {
     const { username, password: textPassword} = req.body
     const password = await bcrypt.hash(textPassword, 10)
 
@@ -36,7 +36,7 @@ router.post('/register', allowCORS, async (req, res) => {
 })
 
 //login
-router.post('/login', allowCORS, async (req, res) => {
+router.post('/login', async (req, res) => {
 
     const { username, password } = req.body
 
@@ -55,7 +55,7 @@ router.post('/login', allowCORS, async (req, res) => {
 })
 
 //update user
-router.post('/changePassword', [authenticateToken, allowCORS], async (req, res) => {
+router.post('/changePassword', authenticateToken, async (req, res) => {
     const {newPassword} = req.body
 
 
@@ -70,7 +70,7 @@ router.post('/changePassword', [authenticateToken, allowCORS], async (req, res) 
 })
 
 //delete user
-router.delete('/:id', [getUser, allowCORS], async (req, res) => {
+router.delete('/:id', getUser, async (req, res) => {
     try {
         await res.user.remove()
         res.status(200).json({ message: 'Successfully deleted user' })
@@ -85,10 +85,7 @@ router.delete('/:id', [getUser, allowCORS], async (req, res) => {
 
 
 
-function allowCORS(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*")
-    next()
-}
+
 
 async function getUser(req, res, next) {
     try {

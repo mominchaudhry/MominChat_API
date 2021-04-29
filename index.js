@@ -15,6 +15,13 @@ db.once('open', () => console.log('Connected to database'))
 
 app.use(express.json())
 
+app.use(function(req, res, next) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader('Access-Control-Allow-Methods', '*');
+    res.setHeader("Access-Control-Allow-Headers", "*");
+    next();
+});
+
 app.use('/api/users', usersRouter)
 
 app.listen(
