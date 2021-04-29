@@ -78,7 +78,7 @@ router.post('/changePassword', authenticateToken, async (req, res) => {
 })
 
 //delete user
-router.delete('/:id', [getUser, authenticateToken], async (req, res) => {
+router.delete('/:id', [authenticateToken, isAdmin, getUser], async (req, res) => {
     try {
         await res.user.remove()
         res.status(200).json({ message: 'Successfully deleted user' })
@@ -94,6 +94,10 @@ router.delete('/:id', [getUser, authenticateToken], async (req, res) => {
 
 
 
+function isAdmin(req, res, next) {
+    if (!req.body.user.admin) res.status(403).json({ message: 'You don\'t have permission for that ;)' })
+    next()
+}
 
 async function getUser(req, res, next) {
     try {
