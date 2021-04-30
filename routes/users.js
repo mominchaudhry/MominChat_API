@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', getUser, async (req, res) => {
     const user = res.user
-    res.status(200).json({firstName:user.firstName, lastName:user.lastName})
+    res.status(200).json({id:req.params.id, firstName:user.firstName, lastName:user.lastName})
 })
 
 //create user
