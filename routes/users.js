@@ -17,6 +17,11 @@ router.get('/', async (req, res) => {
     }
 })
 
+router.get('/:id', getUser, async (req, res) => {
+    const user = res.user
+    res.status(200).json({firstName:user.firstName, lastName:user.lastName})
+})
+
 //create user
 router.post('/register', async (req, res) => {
     const { username, password: textPassword, admin, firstName, lastName, dob} = req.body
@@ -102,12 +107,13 @@ router.get('/friends', authenticateToken, async (req, res) => {
 router.post('/friends', authenticateToken, async (req, res) => {
     console.log(req.user.id, req.body.id)
     try {
-        const newUser = await User.find(req.body.id)
+        const newUser = await User.findOne({ _id:req.body.id })
         if (!newUser) return res.status(400).json({ message:'User does not exist' })
         await User.updateOne({_id:req.user.id}, {$push: {friends: req.body.id}})
         const u = await User.findOne({_id:req.user.id}).lean()
         return res.status(201).send(u.friends)
     } catch (err) {
+        console.log(err.message)
         return res.status(500).json({ message: err.message })
     }
 })
