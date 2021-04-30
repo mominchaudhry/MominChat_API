@@ -77,7 +77,7 @@ router.post('/changePassword', authenticateToken, async (req, res) => {
     return res.status(400).json({message:'Unable to change password'})
 })
 
-//delete user
+//delete user ONLY ADMIN USERS
 router.delete('/:id', [authenticateToken, getUser], async (req, res) => {
     const newuser = await User.findOne({username:req.user.username}).lean()
     console.log(newuser)
@@ -90,6 +90,34 @@ router.delete('/:id', [authenticateToken, getUser], async (req, res) => {
     }
 })
 
+//get all friends of currently logged in user
+router.get('/friends', authenticateToken, async (req, res) => {
+    const user = await User.findOne({username:req.user.username}).lean()
+    if (!user) return res.status(400).json({message:'User does not exist'})
+
+    res.status(200).send(user.friends)
+})
+
+//add new friend id to currently logged in users friend list
+router.post('/friends', authenticateToken, async (req, res) => {
+    console.log(req.user.id, req.body.id)
+    try {
+        const newUser = await User.updateOne({_id:req.user.id}, {$push: {friends: req.body.id}})
+        return res.status(201).json(newUser)
+    } catch (err) {
+        return res.status(500).json({ message: err.message })
+    }
+})
+
+//delete a friend from currently logged in user
+router.delete('/friends/:id', authenticateToken, async (req, res) => {
+    const user = await User.findOne({username:req.user.username}).lean()
+    if (!user) res.status(400).json({message:'User does not exist'})
+
+    const newUser = await User.updateOne({_id:req.user.id}, {$pullAll: {friends: [req.params.id]}})
+
+    res.status(200).json(newUser)
+})
 
 
 
@@ -97,10 +125,6 @@ router.delete('/:id', [authenticateToken, getUser], async (req, res) => {
 
 
 
-function isAdmin(req, res, next) {
-    if (!req.body.user.admin) res.status(403).json({ message: 'You don\'t have permission for that ;)' })
-    next()
-}
 
 async function getUser(req, res, next) {
     try {

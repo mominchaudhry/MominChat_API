@@ -25,7 +25,10 @@ const userSchema = new mongoose.Schema({
     dob: {
         type: Date,
         required: true
-    }
+    },
+    friends: [{
+        type: String
+    }]
 })
 
 module.exports = mongoose.model('User', userSchema)
