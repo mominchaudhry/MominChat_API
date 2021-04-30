@@ -102,6 +102,8 @@ router.get('/friends', authenticateToken, async (req, res) => {
 router.post('/friends', authenticateToken, async (req, res) => {
     console.log(req.user.id, req.body.id)
     try {
+        const newUser = await User.find(req.body.id)
+        if (!newUser) return res.status(400).json({ message:'User does not exist' })
         await User.updateOne({_id:req.user.id}, {$push: {friends: req.body.id}})
         const u = await User.findOne({_id:req.user.id}).lean()
         return res.status(201).send(u.friends)
