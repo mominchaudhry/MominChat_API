@@ -102,8 +102,9 @@ router.get('/friends', authenticateToken, async (req, res) => {
 router.post('/friends', authenticateToken, async (req, res) => {
     console.log(req.user.id, req.body.id)
     try {
-        const newUser = await User.updateOne({_id:req.user.id}, {$push: {friends: req.body.id}})
-        return res.status(201).json(newUser)
+        await User.updateOne({_id:req.user.id}, {$push: {friends: req.body.id}})
+        const u = await User.findOne({_id:req.user.id}).lean()
+        return res.status(201).send(u.friends)
     } catch (err) {
         return res.status(500).json({ message: err.message })
     }
@@ -114,9 +115,10 @@ router.delete('/friends/:id', authenticateToken, async (req, res) => {
     const user = await User.findOne({username:req.user.username}).lean()
     if (!user) res.status(400).json({message:'User does not exist'})
 
-    const newUser = await User.updateOne({_id:req.user.id}, {$pullAll: {friends: [req.params.id]}})
+    await User.updateOne({_id:req.user.id}, {$pullAll: {friends: [req.params.id]}})
+    const u = await User.findOne({_id:req.user.id}).lean()
 
-    res.status(200).json(newUser)
+    res.status(200).json(u.friends)
 })
 
 
