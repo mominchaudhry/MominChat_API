@@ -19,13 +19,13 @@ router.get('/', async (req, res) => {
 
 //create user
 router.post('/register', async (req, res) => {
-    const { username, password: textPassword, admin} = req.body
+    const { username, password: textPassword, admin, firstName, lastName, dob} = req.body
     const password = await bcrypt.hash(textPassword, 10)
 
     if (username.length <1) return res.status(400).json({message: 'Username missing'})
     if (textPassword.length <8) return res.status(400).json({message: 'Password must be at least 8 characters'})
 
-    const user = new User({ username, password, admin })
+    const user = new User({ username, password, admin, firstName, lastName, dob })
 
     try {
         const newUser = await user.save()
@@ -78,7 +78,10 @@ router.post('/changePassword', authenticateToken, async (req, res) => {
 })
 
 //delete user
-router.delete('/:id', [authenticateToken, isAdmin, getUser], async (req, res) => {
+router.delete('/:id', [authenticateToken, getUser], async (req, res) => {
+    const newuser = await User.findOne({username:req.user.username}).lean()
+    console.log(newuser)
+    if (!newuser.admin) return res.status(403).json({ message: 'You don\'t have permission for that ;)' })
     try {
         await res.user.remove()
         res.status(200).json({ message: 'Successfully deleted user' })
@@ -120,7 +123,7 @@ function authenticateToken(req, res, next) {
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         if (err) return res.sendStatus(403)
-        req.user=user
+        req.user = user
         next()
     })
 }
