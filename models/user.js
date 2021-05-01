@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     friends: [{
-        type: String
+        type: Object
     }]
 })
 

@@ -5,7 +5,8 @@ const express = require('express');
 const jwt  = require('jsonwebtoken');
 const router = express.Router();
 const User = require('../models/user')
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
+const { isValidObjectId } = require('mongoose');
 
 //get all users
 router.get('/', async (req, res) => {
@@ -19,7 +20,8 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', getUser, async (req, res) => {
     const user = res.user
-    res.status(200).json({id:req.params.id, firstName:user.firstName, lastName:user.lastName})
+    const data = {id:req.params.id, firstName:user.firstName, lastName:user.lastName}
+    res.status(200).json(data)
 })
 
 //create user
@@ -85,7 +87,6 @@ router.post('/changePassword', authenticateToken, async (req, res) => {
 //delete user ONLY ADMIN USERS
 router.delete('/:id', [authenticateToken, getUser], async (req, res) => {
     const newuser = await User.findOne({username:req.user.username}).lean()
-    console.log(newuser)
     if (!newuser.admin) return res.status(403).json({ message: 'You don\'t have permission for that ;)' })
     try {
         await res.user.remove()
@@ -105,13 +106,17 @@ router.get('/friends', authenticateToken, async (req, res) => {
 
 //add new friend id to currently logged in users friend list
 router.post('/friends', authenticateToken, async (req, res) => {
-    console.log(req.user.id, req.body.id)
     try {
         const newUser = await User.findOne({ _id:req.body.id })
         if (!newUser) return res.status(400).json({ message:'User does not exist' })
         await User.updateOne({_id:req.user.id}, {$push: {friends: req.body.id}})
         const u = await User.findOne({_id:req.user.id}).lean()
-        return res.status(201).send(u.friends)
+        var friends = u.friends
+        const friendUsers = await User.find({_id: {$in: friends}})
+        const friendsList = friendUsers.map(f => {
+            return { id:f._id, firstName:f.firstName, lastName:f.lastName}
+        })
+        return res.status(201).send(friendsList)
     } catch (err) {
         console.log(err.message)
         return res.status(500).json({ message: err.message })
