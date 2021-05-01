@@ -109,13 +109,13 @@ router.post('/friends', authenticateToken, async (req, res) => {
     try {
         const newUser = await User.findOne({ _id:req.body.id })
         if (!newUser) return res.status(400).json({ message:'User does not exist' })
-        await User.updateOne({_id:req.user.id}, {$push: {friends: req.body.id}})
         const u = await User.findOne({_id:req.user.id}).lean()
         var friends = u.friends
         const friendUsers = await User.find({_id: {$in: friends}})
         const friendsList = friendUsers.map(f => {
             return { id:f._id, firstName:f.firstName, lastName:f.lastName}
         })
+        await User.updateOne({_id:req.user.id}, {$push: {friends: friendsList}})
         return res.status(201).send(friendsList)
     } catch (err) {
         console.log(err.message)
