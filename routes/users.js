@@ -109,14 +109,9 @@ router.post('/friends', authenticateToken, async (req, res) => {
     try {
         const newUser = await User.findOne({ _id:req.body.id })
         if (!newUser) return res.status(400).json({ message:'User does not exist' })
-        await User.updateOne({_id:req.user.id}, {$push: {friends: req.body.id}})
+        await User.updateOne({_id:req.user.id}, {$push: {friends: {id:newUser._id, firstName:newUser.firstName, lastName:newUser.lastName}}})
         const u = await User.findOne({_id:req.user.id}).lean()
-        var friends = u.friends
-        const friendUsers = await User.find({_id: {$in: friends}})
-        const friendsList = friendUsers.map(f => {
-            return { id:f._id, firstName:f.firstName, lastName:f.lastName}
-        })
-        return res.status(201).send(friendsList)
+        return res.status(201).send(u.friends)
     } catch (err) {
         console.log(err.message)
         return res.status(500).json({ message: err.message })
@@ -128,17 +123,24 @@ router.delete('/friends/:id', authenticateToken, async (req, res) => {
     const user = await User.findOne({username:req.user.username}).lean()
     if (!user) res.status(400).json({message:'User does not exist'})
 
-    await User.updateOne({_id:req.user.id}, {$pullAll: {friends: [req.params.id]}})
-    const u = await User.findOne({_id:req.user.id}).lean()
-    var friends = u.friends
-    const friendUsers = await User.find({_id: {$in: friends}})
-    const friendsList = friendUsers.map(f => {
-        return { id:f._id, firstName:f.firstName, lastName:f.lastName}
-    })
-    res.status(200).send(friendsList)
+    const newuser = await User.findOne({_id:req.user.id}).lean()
+    const _id = newuser._id
+    const oldFriends = newuser.friends
+    var indices = oldFriends.map(function(item) { return String(item.id); })
+    var removeIndex = indices.indexOf(req.params.id);
+    console.log(removeIndex)
+    oldFriends.splice(removeIndex, 1);
+    await User.updateOne({_id}, {$set: {friends:oldFriends}})
+    
+    res.status(200).send(oldFriends)
 })
 
-
+router.delete('/removeFriends', authenticateToken, async (req, res) => {
+    const user = await User.findOne({_id:req.user.id}).lean()
+    const _id = user._id
+    await User.updateOne({_id}, {$set: {friends:[]}})
+    res.status(200).send()
+})
 
 
 
