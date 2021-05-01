@@ -130,8 +130,12 @@ router.delete('/friends/:id', authenticateToken, async (req, res) => {
 
     await User.updateOne({_id:req.user.id}, {$pullAll: {friends: [req.params.id]}})
     const u = await User.findOne({_id:req.user.id}).lean()
-
-    res.status(200).json(u.friends)
+    var friends = u.friends
+    const friendUsers = await User.find({_id: {$in: friends}})
+    const friendsList = friendUsers.map(f => {
+        return { id:f._id, firstName:f.firstName, lastName:f.lastName}
+    })
+    res.status(200).send(friendsList)
 })
 
 
