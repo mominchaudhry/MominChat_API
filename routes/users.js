@@ -109,7 +109,12 @@ router.post('/friends', authenticateToken, async (req, res) => {
     try {
         const newUser = await User.findOne({ _id:req.body.id })
         if (!newUser) return res.status(400).json({ message:'User does not exist' })
-        await User.updateOne({_id:req.user.id}, {$push: {friends: {id:newUser._id, firstName:newUser.firstName, lastName:newUser.lastName}}})
+        if (req.user.id === req.body.id) return res.status(400).json({message: 'Cannot add yourself'})
+        console.log(typeof req.user.id, typeof req.body.id)
+        await User.updateOne({_id:req.user.id}, {$push: {friends: {id:newUser.id, firstName:newUser.firstName, lastName:newUser.lastName}}})
+        const me = await User.findOne({_id:req.user.id})
+        console.log(me)
+        await User.updateOne({_id:req.body.id}, {$push: {friends: {id:me.id, firstName:me.firstName, lastName:me.lastName}}})
         const u = await User.findOne({_id:req.user.id}).lean()
         return res.status(201).send(u.friends)
     } catch (err) {
@@ -124,13 +129,20 @@ router.delete('/friends/:id', authenticateToken, async (req, res) => {
     if (!user) res.status(400).json({message:'User does not exist'})
 
     const newuser = await User.findOne({_id:req.user.id}).lean()
-    const _id = newuser._id
+    var _id = newuser._id
     const oldFriends = newuser.friends
-    var indices = oldFriends.map(function(item) { return String(item.id); })
-    var removeIndex = indices.indexOf(req.params.id);
-    console.log(removeIndex)
-    oldFriends.splice(removeIndex, 1);
+    var indices = oldFriends.map(function(item) { return String(item.id) })
+    var removeIndex = indices.indexOf(req.params.id)
+    oldFriends.splice(removeIndex, 1)
     await User.updateOne({_id}, {$set: {friends:oldFriends}})
+
+    const olduser = await User.findOne({_id:req.params.id})
+    _id = olduser._id
+    const fs = olduser.friends
+    indices = fs.map(function(item) {return String(item.id)})
+    removeIndex = indices.indexOf(req.user.id)
+    fs.splice(removeIndex, 1)
+    await User.updateOne({_id}, {$set: {friends:fs}})
     
     res.status(200).send(oldFriends)
 })
