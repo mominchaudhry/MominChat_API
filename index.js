@@ -1,8 +1,16 @@
 const express = require('express')
 const app = express()
+const http = require('http').createServer(app)
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config()
 }
+const io = require('socket.io')(http, {
+    cors: {
+      origin: "http://localhost:3000",
+      methods: ["GET", "POST"],
+      credentials: true
+    }
+  })
 
 const usersRouter = require('./routes/users')
 
@@ -24,7 +32,21 @@ app.use(function(req, res, next) {
 
 app.use('/api/users', usersRouter)
 
-app.listen(
+http.listen(
     process.env.PORT,
     () => console.log(`server at: http://localhost:${process.env.PORT}`)
 )
+
+
+
+
+
+
+io.on('connection', socket => {
+    const myid = socket.handshake.query.id
+    socket.join(myid)
+
+    socket.on('send-message', ({ sendTo, text}) => {
+        socket.broadcast.to(sendTo).emit('receive-message', {id:myid, text, sender:myid})
+    })
+})
