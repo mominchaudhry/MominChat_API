@@ -107,15 +107,16 @@ router.get('/friends', authenticateToken, async (req, res) => {
 //add new friend id to currently logged in users friend list
 router.post('/friends', authenticateToken, async (req, res) => {
     try {
-        const newUser = await User.findOne({ _id:req.body.id })
+        const newUser = await User.findOne({ username:req.body.id })
         if (!newUser) return res.status(400).json({ message:'User does not exist' })
         if (req.user.id === req.body.id) return res.status(400).json({message: 'Cannot add yourself'})
-        console.log(typeof req.user.id, typeof req.body.id)
+
         await User.updateOne({_id:req.user.id}, {$push: {friends: {id:newUser.id, firstName:newUser.firstName, lastName:newUser.lastName}}})
         const me = await User.findOne({_id:req.user.id})
-        console.log(me)
-        await User.updateOne({_id:req.body.id}, {$push: {friends: {id:me.id, firstName:me.firstName, lastName:me.lastName}}})
+
+        await User.updateOne({username:req.body.id}, {$push: {friends: {id:me.id, firstName:me.firstName, lastName:me.lastName}}})
         const u = await User.findOne({_id:req.user.id}).lean()
+
         return res.status(201).send(u.friends)
     } catch (err) {
         console.log(err.message)
