@@ -97,8 +97,8 @@ router.delete('/:id', [authenticateToken, getUser], async (req, res) => {
 })
 
 //get all friends of currently logged in user
-router.get('/friends', authenticateToken, async (req, res) => {
-    const user = await User.findOne({username:req.user.username}).lean()
+router.get('/friends/:id', async (req, res) => {
+    const user = await User.findOne({_id:req.params.id}).lean()
     if (!user) return res.status(400).json({message:'User does not exist'})
 
     res.status(200).send(user.friends)
@@ -178,6 +178,7 @@ function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
     if (!token) return res.sendStatus(401)
+    console.log(user)
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         if (err) return res.sendStatus(403)
